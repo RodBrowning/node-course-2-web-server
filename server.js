@@ -1,30 +1,73 @@
+const fs = require('fs');
 const express = require('express');
+const hbs = require('hbs');
 
 var app = express();
 
-app.get('/',(req, res)=>{
-	//res.send({`<h1>Hello world!</h1>`});
-	res.send({
-		nome : "Rodrigo",
-		idade : 23,
-		likes: [
-			'bike',
-			'girls'
-		]
+app.set('view engine', 'hbs');
+
+hbs.registerPartials(__dirname + '/views/partials');
+
+hbs.registerHelper('getCurrentYear', ()=>
+	{
+		return new Date().getFullYear();
 	});
-});
 
-app.get('/about', (req, res)=>{
-	res.send('About Page');
-})
+hbs.registerHelper('scream_it', (message) => 
+	{
+		return message.toUpperCase();
+	});
 
-app.get('/bad',(req, res)=>{
-	res.send({Error_message: 'Unable to fulfill the request'});
-})
+//Middle Where
+//Maintensnce
+/*app.use((req, res, next) =>
+	{
+		res.render('maintenance.hbs',
+			{
+				message : "Will be back soon"
+			});
+
+	});*/
+
+app.use((request, response, next) => 
+	{
+		var now = new Date().toString();
+		var log = `${now} : ${request.method} ${request.url}`;
+		
+		fs.appendFile('server.log', log + '\n', 
+			(err) => 
+				{
+					console.log(err ? "Unable to append to server.log" : log);
+				}
+		);
+		next();
+	});
 
 app.use(express.static(__dirname + '/public'));
 
+app.get('/',(req, res)=>
+	{
+		res.render('home.hbs',
+			{
+				pageTitle : 'Home Page',
+				welcomeMessage : 'Hi is good to see you!'
+			});
+	});
 
-app.listen(3000, ()=>{
-	console.log('The server is up and running on port 3000');
-});
+app.get('/bad',(req, res)=>
+	{
+		res.send({Error_message: 'Unable to fulfill the request.'});
+	})
+
+app.get('/about',(req, res)=>
+	{
+		res.render('about.hbs',
+			{
+				pageTitle : 'About Page'
+			});
+	});
+
+app.listen(3000, ()=>
+	{
+		console.log('The server is up and running on port 3000');
+	});
